@@ -1,11 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kneron_fr/fr_api.dart';
-import 'package:flutter_kneron_fr/fr_msg.dart';
-import 'package:flutter_kneron_fr/utils.dart';
+import 'package:flutter_kneron_fr/message/fr_api.dart';
+import 'package:flutter_kneron_fr/message/fr_msg.dart';
+import 'package:flutter_kneron_fr/utils/utils.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:cp949_codec/cp949_codec.dart';
-import 'package:convert/convert.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final printProvider = Provider<String>((ref) {
+  return "";
+});
+
+List<Uint8List> receiveDataList = [];
 
 class ComPort extends StatefulWidget {
   const ComPort({super.key});
@@ -17,10 +23,12 @@ class ComPort extends StatefulWidget {
 class _ComPortState extends State<ComPort> {
   List<SerialPort> portList = [];
   SerialPort? _serialPort;
-  List<Uint8List> receiveDataList = [];
+  // List<Uint8List> receiveDataList = [];
   // List<Uint8List> rxEx = [];
   final textInputCtrl = TextEditingController();
-
+  final adminInputCtrl = TextEditingController();
+  final userNameInputCtrl = TextEditingController();
+  bool _adminChecked = true;
   List<int> baudRate = [3800, 9600, 115200, 1500000];
   int menuBaudrate = 115200;
   String openButtonText = 'N/A';
@@ -88,42 +96,7 @@ class _ComPortState extends State<ComPort> {
             _comPort(),
             _commandList(),
             _userInputSend(),
-            Expanded(
-              flex: 6,
-              child: Card(
-                margin: const EdgeInsets.all(10.0),
-                child: ListView.builder(
-                    itemCount: receiveDataList.length,
-                    itemBuilder: (context, index) {
-                      /*
-                      OUTPUT for raw bytes
-                      */
-                      // rxEx.clear();
-                      var rxEx = List.from(receiveDataList[index]);
-                      // for (int i = 0; i < rxEx.length; i++) {
-                      //   for (int j = 0; j < rxEx[i].length; j++) {
-                      //     log("Rx 0x${rxEx[i][j].toRadixString(16)}");
-                      //   }
-                      // }
-                      // for (int i = 0; i < rxEx.length; i++) {
-                      //   log("Rx 0x${rxEx[i].toRadixString(16)}");
-                      // }
-
-                      // receiveDataList.clear();
-                      // if (rxEx.isEmpty) {
-                      //   log("rx is empty");
-                      //   return const Text("@");
-                      // } else {
-                      //   log("ret $rxEx)");
-                      //   return Text(rxEx[index].toString());
-                      // }
-                      // log("Rx length ${receiveDataList[index].length}");
-                      return Text(receiveDataList[index].toString());
-                      /* output for string */
-                      // return Text(String.fromCharCodes(receiveDataList[index]));
-                    }),
-              ),
-            ),
+            _userRcvScreen()
           ],
         ),
       ),
@@ -159,8 +132,8 @@ class _ComPortState extends State<ComPort> {
             onChanged: (e) {
               setState(() {
                 menuBaudrate = e!;
-                showSnackbar(context, menuBaudrate.toString());
-                log("Baudrate set to $menuBaudrate");
+                utils.showSnackbar(context, menuBaudrate.toString());
+                utils.log("Baudrate set to $menuBaudrate");
               });
             },
           ),
@@ -180,7 +153,7 @@ class _ComPortState extends State<ComPort> {
               }
               if (_serialPort!.isOpen) {
                 _serialPort!.close();
-                log('${_serialPort!.name} closed!');
+                utils.log('${_serialPort!.name} closed!');
               } else {
                 if (_serialPort!.open(mode: SerialPortMode.readWrite)) {
                   SerialPortConfig config = _serialPort!.config;
@@ -196,21 +169,24 @@ class _ComPortState extends State<ComPort> {
                   config.xonXoff = 0;
                   _serialPort!.config = config;
 
-                  log("baudrate : $menuBaudrate");
+                  utils.log("baudrate : $menuBaudrate");
                   if (_serialPort!.isOpen) {
-                    log('${_serialPort!.name} opened!');
-                    showSnackbar(
+                    utils.log('${_serialPort!.name} opened!');
+                    utils.showSnackbar(
                         context, "Serial port opened, ${_serialPort!.name}");
                   }
                   final reader = SerialPortReader(_serialPort!);
                   reader.stream.listen((data) {
-                    makeMessage(data, data.length);
+                    if (makeMessage(context, data, data.length) == true) {
+                      setState(() {});
+                    }
                     // log('received: ${data.length}, ${String.fromCharCodes(data)}');
-                    receiveDataList.add(data);
-                    setState(() {});
+                    // receiveDataList.add(data);
+                    // setState(() {});
                   }, onError: (error) {
                     if (error is SerialPortError) {
-                      log('error: ${cp949.decodeString(error.message)}, code: ${error.errorCode}');
+                      utils.log(
+                          'error: ${cp949.decodeString(error.message)}, code: ${error.errorCode}');
                     }
                   });
                 }
@@ -226,51 +202,100 @@ class _ComPortState extends State<ComPort> {
   _commandList() {
     return Expanded(
       flex: 1,
-      child: Flexible(
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const SizedBox(width: 10),
-                ElevatedButton(
-                    onPressed: () {
-                      showSnackbar(context, "sendPowerDown");
-                      sendPowerDown(context, _serialPort);
-                    },
-                    child: const Text("Power Down")),
-                const SizedBox(width: 10),
-                ElevatedButton(onPressed: () {}, child: const Text("Enroll")),
-                const SizedBox(width: 10),
-                ElevatedButton(onPressed: () {}, child: const Text("Verify")),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                    onPressed: () {}, child: const Text("Get Status")),
-                const SizedBox(width: 10),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const SizedBox(width: 10),
-                ElevatedButton(onPressed: () {}, child: const Text("Del User")),
-                const SizedBox(width: 10),
-                ElevatedButton(onPressed: () {}, child: const Text("Del All")),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                    onPressed: () {
-                      showSnackbar(context, "sendVersion");
-                      sendVersion(context, _serialPort);
-                    },
-                    child: const Text("Version")),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                    onPressed: () {}, child: const Text("Device Info")),
-                const SizedBox(width: 10),
-                ElevatedButton(onPressed: () {}, child: const Text("Reset")),
-              ],
-            ),
-          ],
-        ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    // utils.showSnackbar(context, "sendPowerDown");
+                    sendPowerDown(context, _serialPort);
+                  },
+                  child: const Text("Power Down")),
+              const SizedBox(width: 10),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    sendVerify(context, _serialPort);
+                  },
+                  child: const Text("Verify")),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    sendGetStatus(context, _serialPort);
+                  },
+                  child: const Text("Get Status")),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    sendReset(context, _serialPort);
+                  },
+                  child: const Text("Reset")),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const SizedBox(width: 10),
+              ElevatedButton(onPressed: () {}, child: const Text("Del User")),
+              const SizedBox(width: 10),
+              ElevatedButton(onPressed: () {}, child: const Text("Del All")),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    // utils.showSnackbar(context, "sendVersion");
+                    sendVersion(context, _serialPort);
+                  },
+                  child: const Text("Version")),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    sendDeviceInfo(context, _serialPort);
+                  },
+                  child: const Text("Device Info")),
+              const SizedBox(width: 10),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    sendEnroll(context, _serialPort, userNameInputCtrl.text,
+                        _adminChecked);
+                  },
+                  child: const Text("Enroll")),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: TextField(
+                    enabled: true,
+                    controller: userNameInputCtrl,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: "input user name here",
+                    ),
+                  ),
+                ),
+              ),
+              Checkbox(
+                value: _adminChecked,
+                onChanged: (value) {
+                  setState(() {
+                    _adminChecked = !value!;
+                  });
+                  utils.log(
+                      "enroll admin ${_adminChecked ? "checked" : "unchecked"}");
+                },
+              ),
+              const Text("admin"),
+              const SizedBox(width: 20),
+            ],
+          )
+        ],
       ),
     );
   }
@@ -324,6 +349,47 @@ class _ComPortState extends State<ComPort> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  _userRcvScreen() {
+    return Expanded(
+      flex: 1,
+      child: SizedBox(
+        child: Card(
+          margin: const EdgeInsets.all(15.0),
+          child: ListView.builder(
+              itemCount: receiveDataList.length,
+              itemBuilder: (context, index) {
+                /*
+                        OUTPUT for raw bytes
+                        */
+                // rxEx.clear();
+                // var rxEx = List.from(receiveDataList[index]);
+                // for (int i = 0; i < rxEx.length; i++) {
+                //   for (int j = 0; j < rxEx[i].length; j++) {
+                //     log("Rx 0x${rxEx[i][j].toRadixString(16)}");
+                //   }
+                // }
+                // for (int i = 0; i < rxEx.length; i++) {
+                //   log("Rx 0x${rxEx[i].toRadixString(16)}");
+                // }
+
+                // receiveDataList.clear();
+                // if (rxEx.isEmpty) {
+                //   log("rx is empty");
+                //   return const Text("@");
+                // } else {
+                //   log("ret $rxEx)");
+                //   return Text(rxEx[index].toString());
+                // }
+                // log("Rx length ${receiveDataList[index].length}");
+                // return Text(receiveDataList[index].toString());
+                /* output for string */
+                return Text(String.fromCharCodes(receiveDataList[index]));
+              }),
+        ),
       ),
     );
   }

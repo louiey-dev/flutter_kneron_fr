@@ -1,6 +1,7 @@
 import 'package:desktop_window/desktop_window.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_kneron_fr/com_port.dart';
+import 'package:flutter_kneron_fr/comport/com_port.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const double screenX = 600.0;
 const double screenY = 900.0;
@@ -14,7 +15,9 @@ Future<void> main() async {
   await DesktopWindow.setMaxWindowSize(
       const Size(screenX, screenY)); // 최대 사이즈 부여
 
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(child: MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {

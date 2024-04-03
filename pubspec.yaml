@@ -39,6 +39,8 @@ dependencies:
   cp949_codec: ^1.0.2
   desktop_window: ^0.4.0
   convert: ^3.1.1
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
   
 dev_dependencies:
   flutter_test:
@@ -50,6 +52,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.9
+  custom_lint: ^0.6.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
