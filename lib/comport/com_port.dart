@@ -4,6 +4,7 @@ import 'package:flutter_kneron_fr/message/fr_api.dart';
 import 'package:flutter_kneron_fr/message/fr_kid_message.dart';
 import 'package:flutter_kneron_fr/message/fr_msg.dart';
 import 'package:flutter_kneron_fr/utils/utils.dart';
+import 'package:flutter_kneron_fr/widget/my_widget.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:cp949_codec/cp949_codec.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,9 +86,9 @@ class _ComPortState extends State<ComPort> {
     });
   }
 
-  void changedDropDownItem(SerialPort sp) {
+  void changedDropDownItem(SerialPort sps) {
     setState(() {
-      sp = sp;
+      sp = sps;
     });
   }
 
@@ -120,95 +121,160 @@ class _ComPortState extends State<ComPort> {
 
   _comPort() {
     return Expanded(
-      flex: 1,
+      flex: 0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(width: 10),
-          DropdownButton(
-            value: sp,
-            items: portList.map((item) {
-              return DropdownMenuItem(value: item, child: Text("${item.name}"));
-              // "${item.name}: ${cp949.decodeString(item.description ?? '')}"));
-            }).toList(),
-            onChanged: (e) {
-              setState(() {
-                changedDropDownItem(e as SerialPort);
-              });
-            },
+          Expanded(
+            child: DropdownButton(
+              value: sp,
+              items: portList.map((item) {
+                return DropdownMenuItem(
+                    value: item, child: Text("${item.name}"));
+                // "${item.name}: ${cp949.decodeString(item.description ?? '')}"));
+              }).toList(),
+              onChanged: (e) {
+                setState(() {
+                  changedDropDownItem(e as SerialPort);
+                });
+              },
+            ),
           ),
           const SizedBox(width: 20.0),
-          DropdownButton(
-            value: menuBaudrate,
-            items: baudRate.map((value) {
-              return DropdownMenuItem(
-                  value: value, child: Text(value.toString()));
-            }).toList(),
-            onChanged: (e) {
-              setState(() {
-                menuBaudrate = e!;
-                utils.showSnackbar(context, menuBaudrate.toString());
-                utils.log("Baudrate set to $menuBaudrate");
-              });
-            },
+          Expanded(
+            child: DropdownButton(
+              value: menuBaudrate,
+              items: baudRate.map((value) {
+                return DropdownMenuItem(
+                    value: value, child: Text(value.toString()));
+              }).toList(),
+              onChanged: (e) {
+                setState(() {
+                  menuBaudrate = e!;
+                  utils.showSnackbar(context, menuBaudrate.toString());
+                  utils.log("Baudrate set to $menuBaudrate");
+                });
+              },
+            ),
           ),
           const SizedBox(width: 20.0),
-          OutlinedButton(
-            child: const Text("COM"),
-            onPressed: () {
-              _initPort();
-            },
+          Expanded(
+            child: OutlinedButton(
+              child: const Text("COM"),
+              onPressed: () {
+                _initPort();
+              },
+            ),
           ),
+          // MyElevatedButton(
+          //   child: () {
+          //     _initPort();
+          //   },
+          //   title: "COM",
+          // ),
           const SizedBox(width: 20.0),
-          OutlinedButton(
-            child: Text(openButtonText),
-            onPressed: () {
-              if (sp == null) {
-                return;
-              }
-              if (sp!.isOpen) {
-                sp!.close();
-                utils.log('${sp!.name} closed!');
-              } else {
-                if (sp!.open(mode: SerialPortMode.readWrite)) {
-                  SerialPortConfig config = sp!.config;
-                  // https://www.sigrok.org/api/libserialport/0.1.1/a00007.html#gab14927cf0efee73b59d04a572b688fa0
-                  // https://www.sigrok.org/api/libserialport/0.1.1/a00004_source.html
-                  // config.baudRate = 115200;
-                  config.baudRate = menuBaudrate;
-                  config.parity = 0;
-                  config.bits = 8;
-                  config.cts = 0;
-                  config.rts = 0;
-                  config.stopBits = 1;
-                  config.xonXoff = 0;
-                  sp!.config = config;
+          // MyElevatedButton(
+          //   child: () {
+          //     if (sp == null) {
+          //       return;
+          //     }
+          //     if (sp!.isOpen) {
+          //       sp!.close();
+          //       utils.log('${sp!.name} closed!');
+          //     } else {
+          //       if (sp!.open(mode: SerialPortMode.readWrite)) {
+          //         SerialPortConfig config = sp!.config;
+          //         // https://www.sigrok.org/api/libserialport/0.1.1/a00007.html#gab14927cf0efee73b59d04a572b688fa0
+          //         // https://www.sigrok.org/api/libserialport/0.1.1/a00004_source.html
+          //         // config.baudRate = 115200;
+          //         config.baudRate = menuBaudrate;
+          //         config.parity = 0;
+          //         config.bits = 8;
+          //         config.cts = 0;
+          //         config.rts = 0;
+          //         config.stopBits = 1;
+          //         config.xonXoff = 0;
+          //         sp!.config = config;
 
-                  utils.log("baudrate : $menuBaudrate");
-                  if (sp!.isOpen) {
-                    utils.log('${sp!.name} opened!');
-                    utils.showSnackbar(
-                        context, "Serial port opened, ${sp!.name}");
-                  }
-                  final reader = SerialPortReader(sp!);
-                  reader.stream.listen((data) {
-                    if (makeMessage(context, data, data.length) == true) {
-                      setState(() {});
-                    }
-                    // log('received: ${data.length}, ${String.fromCharCodes(data)}');
-                    // receiveDataList.add(data);
-                    // setState(() {});
-                  }, onError: (error) {
-                    if (error is SerialPortError) {
-                      utils.log(
-                          'error: ${cp949.decodeString(error.message)}, code: ${error.errorCode}');
-                    }
-                  });
+          //         utils.log("baudrate : $menuBaudrate");
+          //         if (sp!.isOpen) {
+          //           utils.log('${sp!.name} opened!');
+          //           utils.showSnackbar(
+          //               context, "Serial port opened, ${sp!.name}");
+          //         }
+          //         final reader = SerialPortReader(sp!);
+          //         reader.stream.listen((data) {
+          //           if (makeMessage(context, data, data.length) == true) {
+          //             setState(() {});
+          //           }
+          //           // log('received: ${data.length}, ${String.fromCharCodes(data)}');
+          //           // receiveDataList.add(data);
+          //           // setState(() {});
+          //         }, onError: (error) {
+          //           if (error is SerialPortError) {
+          //             utils.log(
+          //                 'error: ${cp949.decodeString(error.message)}, code: ${error.errorCode}');
+          //           }
+          //         });
+          //       }
+          //     }
+          //     setState(() {});
+          //   },
+          //   title: openButtonText,
+          // ),
+          Expanded(
+            child: OutlinedButton(
+              child: Text(openButtonText),
+              onPressed: () {
+                if (sp == null) {
+                  return;
                 }
-              }
-              setState(() {});
-            },
+                if (sp!.isOpen) {
+                  sp!.close();
+                  utils.log('${sp!.name} closed!');
+                } else {
+                  if (sp!.open(mode: SerialPortMode.readWrite)) {
+                    SerialPortConfig config = sp!.config;
+                    // https://www.sigrok.org/api/libserialport/0.1.1/a00007.html#gab14927cf0efee73b59d04a572b688fa0
+                    // https://www.sigrok.org/api/libserialport/0.1.1/a00004_source.html
+                    // config.baudRate = 115200;
+                    config.baudRate = menuBaudrate;
+                    config.parity = 0;
+                    config.bits = 8;
+                    config.cts = 0;
+                    config.rts = 0;
+                    config.stopBits = 1;
+                    config.xonXoff = 0;
+                    sp!.config = config;
+
+                    utils.log("baudrate : $menuBaudrate");
+                    if (sp!.isOpen) {
+                      utils.log('${sp!.name} opened!');
+                      utils.showSnackbar(
+                          context, "Serial port opened, ${sp!.name}");
+                    }
+                    final reader = SerialPortReader(sp!);
+                    reader.stream.listen((data) {
+                      if (makeMessage(context, data, data.length) == true) {
+                        setState(() {});
+                      }
+                      // log('received: ${data.length}, ${String.fromCharCodes(data)}');
+                      // receiveDataList.add(data);
+                      // setState(() {});
+                    }, onError: (error) {
+                      if (error is SerialPortError) {
+                        utils.log(
+                            'error: ${cp949.decodeString(error.message)}, code: ${error.errorCode}');
+                      }
+                    });
+                  }
+                }
+                setState(() {});
+              },
+            ),
           ),
+          const SizedBox(width: 10),
         ],
       ),
     );
@@ -216,66 +282,110 @@ class _ComPortState extends State<ComPort> {
 
   _commandList() {
     return Expanded(
-      flex: 1,
+      flex: 0,
       child: Column(
         children: [
           // utils.divider(thickness: 2.0),
           Row(
             children: [
               const SizedBox(width: 10),
-              ElevatedButton(
-                  onPressed: () {
-                    // utils.showSnackbar(context, "sendPowerDown");
-                    sendPowerDown(context, sp);
-                  },
-                  child: const Text("Power Down")),
+              // ElevatedButton(
+              //     onPressed: () {
+              //       // utils.showSnackbar(context, "sendPowerDown");
+              //       sendPowerDown(context, sp);
+              //     },
+              //     child: const Text("Power Down")),
+              ExpElevatedButton(
+                title: "Power Down",
+                onPressed: () {
+                  sendPowerDown(context, sp);
+                },
+              ),
               const SizedBox(width: 10),
+              // ElevatedButton(
+              //     onPressed: () {
+              //       sendVerify(context, sp);
+              //     },
+              //     child: const Text("Verify")),
+              ExpElevatedButton(
+                title: "Verify",
+                onPressed: () {
+                  sendVerify(context, sp);
+                },
+              ),
               const SizedBox(width: 10),
-              ElevatedButton(
-                  onPressed: () {
-                    sendVerify(context, sp);
-                  },
-                  child: const Text("Verify")),
+              // ElevatedButton(
+              //     onPressed: () {
+              //       sendGetStatus(context, sp);
+              //     },
+              //     child: const Text("Get Status")),
+              ExpElevatedButton(
+                title: "Get Status",
+                onPressed: () {
+                  sendGetStatus(context, sp);
+                },
+              ),
               const SizedBox(width: 10),
-              ElevatedButton(
-                  onPressed: () {
-                    sendGetStatus(context, sp);
-                  },
-                  child: const Text("Get Status")),
+              // ElevatedButton(
+              //     onPressed: () {
+              //       sendReset(context, sp);
+              //       m_userName = userNameInputCtrl.text;
+              //       m_admin = _adminChecked;
+              //     },
+              //     child: const Text("Reset")),
+              ExpElevatedButton(
+                title: "Reset",
+                onPressed: () {
+                  sendReset(context, sp);
+                  m_userName = userNameInputCtrl.text;
+                  m_admin = _adminChecked;
+                },
+              ),
               const SizedBox(width: 10),
-              ElevatedButton(
-                  onPressed: () {
-                    sendReset(context, sp);
-                    m_userName = userNameInputCtrl.text;
-                    m_admin = _adminChecked;
-                  },
-                  child: const Text("Reset")),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               const SizedBox(width: 10),
-              ElevatedButton(onPressed: () {}, child: const Text("Del User")),
-              const SizedBox(width: 10),
-              ElevatedButton(
+              // ExpElevatedButton(
+              //     onPressed: () {
+              //       sendDelAllUser(context, sp);
+              //     },
+              //     title: "Del User"),
+              ExpElevatedButton(
                   onPressed: () {
                     sendDelAllUser(context, sp);
                   },
-                  child: const Text("Del All")),
+                  title: "Del All"),
+
               const SizedBox(width: 10),
-              ElevatedButton(
-                  onPressed: () {
-                    // utils.showSnackbar(context, "sendVersion");
-                    sendVersion(context, sp);
-                  },
-                  child: const Text("Version")),
+              // ElevatedButton(
+              //     onPressed: () {
+              //       // utils.showSnackbar(context, "sendVersion");
+              //       sendVersion(context, sp);
+              //     },
+              //     child: const Text("Version")),
+              ExpElevatedButton(
+                title: "Version",
+                onPressed: () {
+                  sendVersion(context, sp);
+                },
+              ),
               const SizedBox(width: 10),
-              ElevatedButton(
-                  onPressed: () {
-                    sendDeviceInfo(context, sp);
-                  },
-                  child: const Text("Device Info")),
+              // Expanded(
+              //   child: ElevatedButton(
+              //       onPressed: () {
+              //         sendDeviceInfo(context, sp);
+              //       },
+              //       child: const Text("Device Info")),
+              // ),
+              ExpElevatedButton(
+                title: "Device Info",
+                onPressed: () {
+                  sendDeviceInfo(context, sp);
+                },
+              ),
               const SizedBox(width: 10),
             ],
           ),
@@ -284,21 +394,34 @@ class _ComPortState extends State<ComPort> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               const SizedBox(width: 10),
-              ElevatedButton(
+              // ElevatedButton(
+              //     onPressed: () {
+              //       sendEnrollSingle(
+              //           context, sp, userNameInputCtrl.text, _adminChecked);
+              //     },
+              //     child: const Text("Enroll Single")),
+              ExpElevatedButton(
+                  title: "Enroll Single",
                   onPressed: () {
                     sendEnrollSingle(
                         context, sp, userNameInputCtrl.text, _adminChecked);
-                  },
-                  child: const Text("Enroll Single")),
+                  }),
               const SizedBox(width: 10),
-              ElevatedButton(
+              // ElevatedButton(
+              //     onPressed: () {
+              //       sendEnroll(context, sp, userNameInputCtrl.text,
+              //           _adminChecked, _faceDir);
+              //     },
+              //     child: const Text("Enroll")),
+              ExpElevatedButton(
+                  title: "Enroll",
                   onPressed: () {
                     sendEnroll(context, sp, userNameInputCtrl.text,
                         _adminChecked, _faceDir);
-                  },
-                  child: const Text("Enroll")),
+                  }),
               const SizedBox(width: 10),
               Flexible(
+                flex: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(10.0),
                   child: TextField(
@@ -311,26 +434,48 @@ class _ComPortState extends State<ComPort> {
                   ),
                 ),
               ),
-              Checkbox(
-                value: _adminChecked,
-                onChanged: (value) {
-                  setState(() {
-                    _adminChecked = value!;
-                  });
-                  utils.log(
-                      "enroll admin ${_adminChecked ? "checked" : "unchecked"}");
-                },
-              ),
-              const Text("admin"),
+              // Checkbox(
+              //   value: _adminChecked,
+              //   onChanged: (value) {
+              //     setState(() {
+              //       _adminChecked = value!;
+              //     });
+              //     utils.log(
+              //         "enroll admin ${_adminChecked ? "checked" : "unchecked"}");
+              //   },
+              // ),
+              // const Text("admin"),
+              ExpCheckBox(
+                  value: _adminChecked,
+                  onChange: () {
+                    setState(() {
+                      _adminChecked = !_adminChecked;
+                    });
+                    utils.log(
+                        "enroll admin ${_adminChecked ? "checked" : "unchecked"}");
+                  },
+                  title: "admin"),
               const SizedBox(width: 20),
             ],
           ),
           Row(
             children: [
               const SizedBox(width: 20),
-              Checkbox(
+              // Checkbox(
+              //   value: _middleFace,
+              //   onChanged: (value) {
+              //     setState(() {
+              //       _leftFace = _rightFace = _upFace = _downFace = false;
+              //       _middleFace = true;
+              //       _faceDir = FACE_DIRECTION_MIDDLE;
+              //     });
+              //     utils.log("enroll middle face checked");
+              //   },
+              // ),
+              // const Text("Mid"),
+              ExpCheckBox(
                 value: _middleFace,
-                onChanged: (value) {
+                onChange: () {
                   setState(() {
                     _leftFace = _rightFace = _upFace = _downFace = false;
                     _middleFace = true;
@@ -338,25 +483,49 @@ class _ComPortState extends State<ComPort> {
                   });
                   utils.log("enroll middle face checked");
                 },
+                title: "Mid",
               ),
-              const Text("Mid"),
               const SizedBox(width: 20),
-              Checkbox(
-                value: _leftFace,
-                onChanged: (value) {
-                  setState(() {
-                    _middleFace = _rightFace = _upFace = _downFace = false;
-                    _leftFace = true;
-                    _faceDir = FACE_DIRECTION_LEFT;
-                  });
-                  utils.log("enroll left face checked");
-                },
-              ),
-              const Text("Left"),
+              // Checkbox(
+              //   value: _leftFace,
+              //   onChanged: (value) {
+              //     setState(() {
+              //       _middleFace = _rightFace = _upFace = _downFace = false;
+              //       _leftFace = true;
+              //       _faceDir = FACE_DIRECTION_LEFT;
+              //     });
+              //     utils.log("enroll left face checked");
+              //   },
+              // ),
+              // const Text("Left"),
               const SizedBox(width: 20),
-              Checkbox(
+              ExpCheckBox(
+                  value: _leftFace,
+                  onChange: () {
+                    setState(() {
+                      _middleFace = _rightFace = _upFace = _downFace = false;
+                      _leftFace = true;
+                      _faceDir = FACE_DIRECTION_LEFT;
+                    });
+                    utils.log("enroll left face checked");
+                  },
+                  title: "Left"),
+              // Checkbox(
+              //   value: _rightFace,
+              //   onChanged: (value) {
+              //     setState(() {
+              //       _middleFace = _leftFace = _upFace = _downFace = false;
+              //       _rightFace = true;
+              //       _faceDir = FACE_DIRECTION_RIGHT;
+              //     });
+              //     utils.log("enroll right face checked");
+              //   },
+              // ),
+              // const Text("Right"),
+              ExpCheckBox(
+                title: "Right",
                 value: _rightFace,
-                onChanged: (value) {
+                onChange: () {
                   setState(() {
                     _middleFace = _leftFace = _upFace = _downFace = false;
                     _rightFace = true;
@@ -365,11 +534,23 @@ class _ComPortState extends State<ComPort> {
                   utils.log("enroll right face checked");
                 },
               ),
-              const Text("Right"),
               const SizedBox(width: 20),
-              Checkbox(
+              // Checkbox(
+              //   value: _upFace,
+              //   onChanged: (value) {
+              //     setState(() {
+              //       _middleFace = _leftFace = _rightFace = _downFace = false;
+              //       _upFace = true;
+              //       _faceDir = FACE_DIRECTION_UP;
+              //     });
+              //     utils.log("enroll up face checked");
+              //   },
+              // ),
+              // const Text("Up"),
+              ExpCheckBox(
+                title: "Up",
                 value: _upFace,
-                onChanged: (value) {
+                onChange: () {
                   setState(() {
                     _middleFace = _leftFace = _rightFace = _downFace = false;
                     _upFace = true;
@@ -378,11 +559,23 @@ class _ComPortState extends State<ComPort> {
                   utils.log("enroll up face checked");
                 },
               ),
-              const Text("Up"),
               const SizedBox(width: 20),
-              Checkbox(
+              // Checkbox(
+              //   value: _downFace,
+              //   onChanged: (value) {
+              //     setState(() {
+              //       _middleFace = _leftFace = _rightFace = _upFace = false;
+              //       _downFace = true;
+              //       _faceDir = FACE_DIRECTION_DOWN;
+              //     });
+              //     utils.log("enroll down face checked");
+              //   },
+              // ),
+              // const Text("Down"),
+              ExpCheckBox(
+                title: "Down",
                 value: _downFace,
-                onChanged: (value) {
+                onChange: () {
                   setState(() {
                     _middleFace = _leftFace = _rightFace = _upFace = false;
                     _downFace = true;
@@ -391,7 +584,6 @@ class _ComPortState extends State<ComPort> {
                   utils.log("enroll down face checked");
                 },
               ),
-              const Text("Down"),
               const SizedBox(width: 20),
             ],
           ),
@@ -402,12 +594,13 @@ class _ComPortState extends State<ComPort> {
 
   _userInputSend() {
     return Expanded(
-      flex: 1,
+      flex: 0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(width: 10),
-          Flexible(
+          Expanded(
+            flex: 2,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
               child: TextField(

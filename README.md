@@ -2,8 +2,12 @@
 
 Kneron FR module monitor program
 
-## History
+## Description
 
 - basic screen created
 - basic APIs are implemented including enroll
 - Working normally
+
+## History
+
+- customized button, checkbox added
