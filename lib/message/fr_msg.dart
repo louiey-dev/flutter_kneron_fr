@@ -61,7 +61,7 @@ bool makeMessage(BuildContext context, Uint8List buf, int len) {
   // List<int> b = List.from(buf);
   rx.data.addAll(buf);
   rx.offset += len;
-  utils.log("[makeMessage] $len");
+  // utils.log("[makeMessage] $len");
 
   if (rx.isHeaderFound == false) {
     if (rx.data.length >= headerLen) {
@@ -77,12 +77,12 @@ bool makeMessage(BuildContext context, Uint8List buf, int len) {
           return true;
         }
       } else {
-        utils.log(
-            "[makeMessage] hdr finding ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
+        // utils.log(
+        //     "[makeMessage] hdr finding ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
       }
     } else {
-      utils.log(
-          "[makeMessage] rcv hdr ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
+      // utils.log(
+      //     "[makeMessage] rcv hdr ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
     }
   } else {
     // finish packet receive here
@@ -92,11 +92,11 @@ bool makeMessage(BuildContext context, Uint8List buf, int len) {
       return true;
     } else if (rx.data.length < rx.length) {
       // still needs to buffer
-      utils.log(
-          "[makeMessage] rcv buffer ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
+      // utils.log(
+      //     "[makeMessage] rcv buffer ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
     } else {
-      utils.log(
-          "[makeMessage] rcv error ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
+      // utils.log(
+      //     "[makeMessage] rcv error ${rx.isHeaderFound}, ${rx.response}, ${rx.length}, ${rx.offset}");
     }
   }
 

@@ -1,11 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_kneron_fr/message/fr_api.dart';
+import 'package:flutter_kneron_fr/message/fr_kid_message.dart';
 import 'package:flutter_kneron_fr/message/fr_msg.dart';
 import 'package:flutter_kneron_fr/utils/utils.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:cp949_codec/cp949_codec.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+bool m_admin = false;
+String m_userName = "";
+SerialPort? sp;
 
 final printProvider = Provider<String>((ref) {
   return "";
@@ -22,13 +27,23 @@ class ComPort extends StatefulWidget {
 
 class _ComPortState extends State<ComPort> {
   List<SerialPort> portList = [];
-  SerialPort? _serialPort;
+  // SerialPort? sp;
   // List<Uint8List> receiveDataList = [];
   // List<Uint8List> rxEx = [];
   final textInputCtrl = TextEditingController();
   final adminInputCtrl = TextEditingController();
   final userNameInputCtrl = TextEditingController();
+
   bool _adminChecked = true;
+
+  bool _middleFace = true;
+  bool _leftFace = false;
+  bool _rightFace = false;
+  bool _upFace = false;
+  bool _downFace = false;
+
+  int _faceDir = FACE_DIRECTION_MIDDLE;
+
   List<int> baudRate = [3800, 9600, 115200, 1500000];
   int menuBaudrate = 115200;
   String openButtonText = 'N/A';
@@ -41,7 +56,7 @@ class _ComPortState extends State<ComPort> {
 
   @override
   void dispose() {
-    if (_serialPort != null) _serialPort?.close();
+    if (sp != null) sp?.close();
 
     super.dispose();
   }
@@ -65,22 +80,22 @@ class _ComPortState extends State<ComPort> {
         portList.add(sp);
       }
       if (portList.isNotEmpty) {
-        _serialPort = portList.first;
+        sp = portList.first;
       }
     });
   }
 
   void changedDropDownItem(SerialPort sp) {
     setState(() {
-      _serialPort = sp;
+      sp = sp;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    openButtonText = _serialPort == null
+    openButtonText = sp == null
         ? 'N/A'
-        : _serialPort!.isOpen
+        : sp!.isOpen
             ? 'Close'
             : 'Open';
     return Scaffold(
@@ -111,7 +126,7 @@ class _ComPortState extends State<ComPort> {
         children: [
           const SizedBox(width: 10),
           DropdownButton(
-            value: _serialPort,
+            value: sp,
             items: portList.map((item) {
               return DropdownMenuItem(value: item, child: Text("${item.name}"));
               // "${item.name}: ${cp949.decodeString(item.description ?? '')}"));
@@ -148,15 +163,15 @@ class _ComPortState extends State<ComPort> {
           OutlinedButton(
             child: Text(openButtonText),
             onPressed: () {
-              if (_serialPort == null) {
+              if (sp == null) {
                 return;
               }
-              if (_serialPort!.isOpen) {
-                _serialPort!.close();
-                utils.log('${_serialPort!.name} closed!');
+              if (sp!.isOpen) {
+                sp!.close();
+                utils.log('${sp!.name} closed!');
               } else {
-                if (_serialPort!.open(mode: SerialPortMode.readWrite)) {
-                  SerialPortConfig config = _serialPort!.config;
+                if (sp!.open(mode: SerialPortMode.readWrite)) {
+                  SerialPortConfig config = sp!.config;
                   // https://www.sigrok.org/api/libserialport/0.1.1/a00007.html#gab14927cf0efee73b59d04a572b688fa0
                   // https://www.sigrok.org/api/libserialport/0.1.1/a00004_source.html
                   // config.baudRate = 115200;
@@ -167,15 +182,15 @@ class _ComPortState extends State<ComPort> {
                   config.rts = 0;
                   config.stopBits = 1;
                   config.xonXoff = 0;
-                  _serialPort!.config = config;
+                  sp!.config = config;
 
                   utils.log("baudrate : $menuBaudrate");
-                  if (_serialPort!.isOpen) {
-                    utils.log('${_serialPort!.name} opened!');
+                  if (sp!.isOpen) {
+                    utils.log('${sp!.name} opened!');
                     utils.showSnackbar(
-                        context, "Serial port opened, ${_serialPort!.name}");
+                        context, "Serial port opened, ${sp!.name}");
                   }
-                  final reader = SerialPortReader(_serialPort!);
+                  final reader = SerialPortReader(sp!);
                   reader.stream.listen((data) {
                     if (makeMessage(context, data, data.length) == true) {
                       setState(() {});
@@ -204,32 +219,35 @@ class _ComPortState extends State<ComPort> {
       flex: 1,
       child: Column(
         children: [
+          // utils.divider(thickness: 2.0),
           Row(
             children: [
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
                     // utils.showSnackbar(context, "sendPowerDown");
-                    sendPowerDown(context, _serialPort);
+                    sendPowerDown(context, sp);
                   },
                   child: const Text("Power Down")),
               const SizedBox(width: 10),
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
-                    sendVerify(context, _serialPort);
+                    sendVerify(context, sp);
                   },
                   child: const Text("Verify")),
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
-                    sendGetStatus(context, _serialPort);
+                    sendGetStatus(context, sp);
                   },
                   child: const Text("Get Status")),
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
-                    sendReset(context, _serialPort);
+                    sendReset(context, sp);
+                    m_userName = userNameInputCtrl.text;
+                    m_admin = _adminChecked;
                   },
                   child: const Text("Reset")),
             ],
@@ -240,31 +258,43 @@ class _ComPortState extends State<ComPort> {
               const SizedBox(width: 10),
               ElevatedButton(onPressed: () {}, child: const Text("Del User")),
               const SizedBox(width: 10),
-              ElevatedButton(onPressed: () {}, child: const Text("Del All")),
+              ElevatedButton(
+                  onPressed: () {
+                    sendDelAllUser(context, sp);
+                  },
+                  child: const Text("Del All")),
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
                     // utils.showSnackbar(context, "sendVersion");
-                    sendVersion(context, _serialPort);
+                    sendVersion(context, sp);
                   },
                   child: const Text("Version")),
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
-                    sendDeviceInfo(context, _serialPort);
+                    sendDeviceInfo(context, sp);
                   },
                   child: const Text("Device Info")),
               const SizedBox(width: 10),
             ],
           ),
+          // utils.divider(thickness: 2.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               const SizedBox(width: 10),
               ElevatedButton(
                   onPressed: () {
-                    sendEnroll(context, _serialPort, userNameInputCtrl.text,
-                        _adminChecked);
+                    sendEnrollSingle(
+                        context, sp, userNameInputCtrl.text, _adminChecked);
+                  },
+                  child: const Text("Enroll Single")),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                  onPressed: () {
+                    sendEnroll(context, sp, userNameInputCtrl.text,
+                        _adminChecked, _faceDir);
                   },
                   child: const Text("Enroll")),
               const SizedBox(width: 10),
@@ -285,7 +315,7 @@ class _ComPortState extends State<ComPort> {
                 value: _adminChecked,
                 onChanged: (value) {
                   setState(() {
-                    _adminChecked = !value!;
+                    _adminChecked = value!;
                   });
                   utils.log(
                       "enroll admin ${_adminChecked ? "checked" : "unchecked"}");
@@ -294,7 +324,77 @@ class _ComPortState extends State<ComPort> {
               const Text("admin"),
               const SizedBox(width: 20),
             ],
-          )
+          ),
+          Row(
+            children: [
+              const SizedBox(width: 20),
+              Checkbox(
+                value: _middleFace,
+                onChanged: (value) {
+                  setState(() {
+                    _leftFace = _rightFace = _upFace = _downFace = false;
+                    _middleFace = true;
+                    _faceDir = FACE_DIRECTION_MIDDLE;
+                  });
+                  utils.log("enroll middle face checked");
+                },
+              ),
+              const Text("Mid"),
+              const SizedBox(width: 20),
+              Checkbox(
+                value: _leftFace,
+                onChanged: (value) {
+                  setState(() {
+                    _middleFace = _rightFace = _upFace = _downFace = false;
+                    _leftFace = true;
+                    _faceDir = FACE_DIRECTION_LEFT;
+                  });
+                  utils.log("enroll left face checked");
+                },
+              ),
+              const Text("Left"),
+              const SizedBox(width: 20),
+              Checkbox(
+                value: _rightFace,
+                onChanged: (value) {
+                  setState(() {
+                    _middleFace = _leftFace = _upFace = _downFace = false;
+                    _rightFace = true;
+                    _faceDir = FACE_DIRECTION_RIGHT;
+                  });
+                  utils.log("enroll right face checked");
+                },
+              ),
+              const Text("Right"),
+              const SizedBox(width: 20),
+              Checkbox(
+                value: _upFace,
+                onChanged: (value) {
+                  setState(() {
+                    _middleFace = _leftFace = _rightFace = _downFace = false;
+                    _upFace = true;
+                    _faceDir = FACE_DIRECTION_UP;
+                  });
+                  utils.log("enroll up face checked");
+                },
+              ),
+              const Text("Up"),
+              const SizedBox(width: 20),
+              Checkbox(
+                value: _downFace,
+                onChanged: (value) {
+                  setState(() {
+                    _middleFace = _leftFace = _rightFace = _upFace = false;
+                    _downFace = true;
+                    _faceDir = FACE_DIRECTION_DOWN;
+                  });
+                  utils.log("enroll down face checked");
+                },
+              ),
+              const Text("Down"),
+              const SizedBox(width: 20),
+            ],
+          ),
         ],
       ),
     );
@@ -311,8 +411,7 @@ class _ComPortState extends State<ComPort> {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
               child: TextField(
-                enabled:
-                    (_serialPort != null && _serialPort!.isOpen) ? true : false,
+                enabled: (sp != null && sp!.isOpen) ? true : false,
                 controller: textInputCtrl,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
@@ -322,9 +421,9 @@ class _ComPortState extends State<ComPort> {
           ),
           Flexible(
             child: TextButton.icon(
-              onPressed: (_serialPort != null && _serialPort!.isOpen)
+              onPressed: (sp != null && sp!.isOpen)
                   ? () {
-                      if (_serialPort!.write(Uint8List.fromList(
+                      if (sp!.write(Uint8List.fromList(
                               textInputCtrl.text.codeUnits)) ==
                           textInputCtrl.text.codeUnits.length) {
                         setState(() {
@@ -360,6 +459,7 @@ class _ComPortState extends State<ComPort> {
         child: Card(
           margin: const EdgeInsets.all(15.0),
           child: ListView.builder(
+              shrinkWrap: true,
               itemCount: receiveDataList.length,
               itemBuilder: (context, index) {
                 /*

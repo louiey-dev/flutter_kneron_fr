@@ -22,34 +22,42 @@ bool parseNote(BuildContext context) {
   s_msg_note_data.nid = rx.data[5];
 
   for (int i = 0; i < (rx.length - 2); i++) {
-    s_msg_note_data.data.add(rx.data[i + 6]);
+    s_msg_note_data.data.add(rx.data[i + 7]);
   }
-  utils.log(
-      "[parseNote] resp 0x${rx.response.toRadixString(16)}, ${rx.length}, 0x${s_msg_note_data.nid.toRadixString(16)}");
+  // utils.log(
+  //     "[parseNote] resp 0x${rx.response.toRadixString(16)}, ${s_msg_note_data.data.length}, 0x${s_msg_note_data.nid.toRadixString(16)}");
 
   switch (s_msg_note_data.nid) {
     case NID_READY:
       receiveDataList.add(utils.stringToUint8List("Module is ready"));
       utils.showSnackbar(context, "Module is Ready");
+      utils.log("Module is Ready");
       break;
 
     case NID_FACE_STATE: // 8 params and 2bytes each
-      int state = s_msg_note_data.data[0] << 8 | s_msg_note_data.data[1];
-      int left = s_msg_note_data.data[2] << 8 | s_msg_note_data.data[3];
-      int top = s_msg_note_data.data[4] << 8 | s_msg_note_data.data[5];
-      int right = s_msg_note_data.data[6] << 8 | s_msg_note_data.data[7];
-      int bottom = s_msg_note_data.data[8] << 8 | s_msg_note_data.data[9];
-      int yaw = s_msg_note_data.data[10] << 8 | s_msg_note_data.data[11];
-      int pitch = s_msg_note_data.data[12] << 8 | s_msg_note_data.data[13];
-      int roll = s_msg_note_data.data[14] << 8 | s_msg_note_data.data[15];
-      String faceStatus = "Note => ${noteGetFaceStatus(state)}";
-      receiveDataList.add(utils.stringToUint8List(faceStatus));
-      utils.showSnackbar(context, faceStatus);
+      try {
+        int state = s_msg_note_data.data[0] << 8 | s_msg_note_data.data[1];
+        // int left = s_msg_note_data.data[2] << 8 | s_msg_note_data.data[3];
+        // int top = s_msg_note_data.data[4] << 8 | s_msg_note_data.data[5];
+        // int right = s_msg_note_data.data[6] << 8 | s_msg_note_data.data[7];
+        // int bottom = s_msg_note_data.data[8] << 8 | s_msg_note_data.data[9];
+        // int yaw = s_msg_note_data.data[10] << 8 | s_msg_note_data.data[11];
+        // int pitch = s_msg_note_data.data[12] << 8 | s_msg_note_data.data[13];
+        // int roll = s_msg_note_data.data[14] << 8 | s_msg_note_data.data[15];
+        String faceStatus = "Note => ${noteGetFaceStatus(state)}";
+        receiveDataList.add(utils.stringToUint8List(faceStatus));
+        utils.log(faceStatus);
+        // utils.showSnackbar(context, faceStatus);
+      } catch (e) {
+        utils.showSnackbarError(context, e.toString());
+      }
+
       break;
 
     case NID_UNKNOWNERROR:
       receiveDataList.add(utils.stringToUint8List("Unknown error"));
       utils.showSnackbar(context, "Unknown error");
+      utils.log("Unknown error");
       break;
 
     case NID_OTA_DONE:
@@ -133,7 +141,7 @@ String noteGetFaceStatus(int state) {
       break;
 
     default:
-      str = "State Error";
+      str = "State Error...$state";
       break;
   }
 

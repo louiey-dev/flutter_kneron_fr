@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_kneron_fr/comport/com_port.dart';
+import 'package:flutter_kneron_fr/message/fr_api.dart';
 import 'package:flutter_kneron_fr/message/fr_kid_message.dart';
 import 'package:flutter_kneron_fr/message/fr_msg.dart';
 import 'package:flutter_kneron_fr/utils/utils.dart';
@@ -75,6 +76,7 @@ bool parseReply(BuildContext context) {
           "id $userId, name $userName, admin $admin, eye $eyeUnlock"));
       utils.showSnackbar(
           context, "id $userId, $userName, admin $admin, eye $eyeUnlock");
+      utils.log("id $userId, name $userName, admin $admin, eye $eyeUnlock");
       break;
 
     case KID_ENROLL:
@@ -82,6 +84,45 @@ bool parseReply(BuildContext context) {
       int faceDir = s_msg_reply_data.data[2];
       receiveDataList
           .add(utils.stringToUint8List("Enroll id $enrollId, dir $faceDir"));
+      utils.log(
+          "Enroll id $enrollId, ${enrollId.toRadixString(16)}, dir $faceDir, ${getFaceDirectionString(faceDir)}");
+
+      // if (s_msg_reply_data.result == 0) {
+      //   utils.log("${getFaceDirectionString(faceDir)} is success");
+      // }
+
+      if (faceDir == FACE_DIRECTION_MIDDLE) {
+        // utils.showSnackbar(context, getFaceDirectionString(faceDir));
+        utils.log("Request FACE_DIRECTION_LEFT");
+        sendEnrollEx(context, FACE_DIRECTION_LEFT);
+        // } else if ((faceDir == FACE_DIRECTION_LEFT) || (faceDir != 0)) {
+      } else if (faceDir == (FACE_DIRECTION_LEFT | FACE_DIRECTION_MIDDLE)) {
+        // utils.showSnackbar(context, getFaceDirectionString(faceDir));
+        utils.log("Request FACE_DIRECTION_RIGHT");
+        sendEnrollEx(context, FACE_DIRECTION_RIGHT);
+      } else if (faceDir ==
+          (FACE_DIRECTION_LEFT |
+              FACE_DIRECTION_MIDDLE |
+              FACE_DIRECTION_RIGHT)) {
+        // utils.showSnackbar(context, getFaceDirectionString(faceDir));
+        utils.log("Request FACE_DIRECTION_UP");
+        sendEnrollEx(context, FACE_DIRECTION_UP);
+      } else if (faceDir ==
+          (FACE_DIRECTION_LEFT |
+              FACE_DIRECTION_MIDDLE |
+              FACE_DIRECTION_RIGHT |
+              FACE_DIRECTION_UP)) {
+        // utils.showSnackbar(context, getFaceDirectionString(faceDir));
+        utils.log("Request FACE_DIRECTION_DOWN");
+        sendEnrollEx(context, FACE_DIRECTION_DOWN);
+      } else if (faceDir ==
+          (FACE_DIRECTION_LEFT |
+              FACE_DIRECTION_MIDDLE |
+              FACE_DIRECTION_RIGHT |
+              FACE_DIRECTION_UP |
+              FACE_DIRECTION_DOWN)) {
+        utils.showSnackbar(context, "Registration is completed");
+      }
       break;
 
     case KID_KN_DEVICE_INF:
@@ -91,6 +132,11 @@ bool parseReply(BuildContext context) {
     case KID_POWERDOWN:
       receiveDataList.add(utils.stringToUint8List("Power down ok"));
       utils.showSnackbar(context, "Power Down OK");
+      break;
+
+    case KID_DEL_ALL:
+      receiveDataList.add(utils.stringToUint8List("Delete All Users ok"));
+      utils.showSnackbar(context, "Delete All Users OK");
       break;
 
     default:
@@ -104,4 +150,39 @@ bool clearReplyData() {
   s_msg_reply_data.kid = s_msg_reply_data.result = 0;
   s_msg_reply_data.data.clear();
   return true;
+}
+
+String getFaceDirectionString(int direction) {
+  String strDir = "FACE_DIRECTION_NORMAL";
+  // String strDir = "FACE_DIRECTION_ERROR";
+
+  switch (direction) {
+    case 0x10:
+      strDir = "FACE_DIRECTION_UP";
+      break;
+
+    case 0x08:
+      strDir = "FACE_DIRECTION_DOWN";
+      break;
+
+    case 0x04:
+      strDir = "FACE_DIRECTION_LEFT";
+      break;
+
+    case 0x02:
+      strDir = "FACE_DIRECTION_RIGHT";
+      break;
+
+    case 0x01:
+      strDir = "FACE_DIRECTION_MIDDLE";
+      break;
+
+    case 0x00:
+      strDir = "FACE_DIRECTION_UNDEFINE";
+      break;
+
+    default:
+      break;
+  }
+  return strDir;
 }

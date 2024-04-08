@@ -75,4 +75,24 @@ class MyUtils {
   //     str += e.toString();
   //   }
   // }
+
+  Divider divider(
+      {double thickness = 2.0,
+      double height = 30.0,
+      double indent = 10.0,
+      double endIndent = 20.0,
+      Color color = Colors.green}) {
+    // final thickness0 = thickness;
+    // final height;
+    // final indent;
+    // final endIndent;
+    // final color;
+
+    return Divider(
+        thickness: thickness,
+        color: color,
+        height: height,
+        indent: indent,
+        endIndent: endIndent);
+  }
 }
