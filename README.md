@@ -3,5 +3,7 @@
 Kneron FR module monitor program
 
 ## History
+
 - basic screen created
-- 
+- basic APIs are implemented including enroll
+- Working normally

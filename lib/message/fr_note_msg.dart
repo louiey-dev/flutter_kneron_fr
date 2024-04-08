@@ -24,8 +24,8 @@ bool parseNote(BuildContext context) {
   for (int i = 0; i < (rx.length - 2); i++) {
     s_msg_note_data.data.add(rx.data[i + 7]);
   }
-  // utils.log(
-  //     "[parseNote] resp 0x${rx.response.toRadixString(16)}, ${s_msg_note_data.data.length}, 0x${s_msg_note_data.nid.toRadixString(16)}");
+  utils.log(
+      "[parseNote] resp 0x${rx.response.toRadixString(16)}, ${s_msg_note_data.data.length}, 0x${s_msg_note_data.nid.toRadixString(16)}");
 
   switch (s_msg_note_data.nid) {
     case NID_READY:
