@@ -102,16 +102,19 @@ class _ComPortState extends State<ComPort> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Kneron FR Module"),
       ),
-      body: SizedBox(
-        height: double.infinity,
-        child: Column(
-          children: [
-            // const SizedBox(width: 10),
-            _comPort(),
-            _commandList(),
-            _userInputSend(),
-            _userRcvScreen()
-          ],
+      body: SingleChildScrollView(
+        child: SizedBox(
+          // height: double.infinity,
+          height: MediaQuery.of(context).size.height,
+          child: Column(
+            children: [
+              // const SizedBox(width: 10),
+              _comPort(),
+              _commandList(),
+              _userInputSend(),
+              _userRcvScreen()
+            ],
+          ),
         ),
       ),
     );

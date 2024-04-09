@@ -120,7 +120,10 @@ bool headerFind() {
         return true;
       } else {
         idx++;
+        utils.log("weired");
       }
+    } else {
+      idx++;
     }
   }
   return false;
