@@ -23,7 +23,7 @@ bool parseReply(BuildContext context) {
     s_msg_reply_data.data.add(rx.data[i + 7]);
   }
   utils.log(
-      "[parseReply] resp 0x${rx.response.toRadixString(16)}, ${rx.length}, 0x${s_msg_reply_data.kid.toRadixString(16)}");
+      "[parseReply] resp 0x${rx.response.toRadixString(16)}, rx len ${rx.length}, payload len ${s_msg_reply_data.data.length}, kid 0x${s_msg_reply_data.kid.toRadixString(16)}");
   switch (s_msg_reply_data.kid) {
     case KID_GET_VERSION:
       String verStr = utils.listIntToString(s_msg_reply_data.data);
@@ -137,6 +137,41 @@ bool parseReply(BuildContext context) {
     case KID_DEL_ALL:
       receiveDataList.add(utils.stringToUint8List("Delete All Users ok"));
       utils.showSnackbar(context, "Delete All Users OK");
+      break;
+
+    case KID_DB_EXPORT_REQUEST:
+      int userId = s_msg_reply_data.data[0] << 8 | s_msg_reply_data.data[1];
+      int totalSize = s_msg_reply_data.data[2] << 24 |
+          s_msg_reply_data.data[3] << 16 |
+          s_msg_reply_data.data[4] << 8 |
+          s_msg_reply_data.data[5];
+      utils.log("user id $userId, total size $totalSize");
+
+      m_dataTotalSize = totalSize;
+
+      // sendUploadData(context, sp, 0, 4095, KID_DB_EXPORT_REQUEST);
+      break;
+
+    case KID_UPLOAD_DATA:
+      int rxSize = m_dataOffset * m_dataSize;
+      if (rxSize < m_dataTotalSize) {
+        // check whether this is last one
+        int restSize = m_dataTotalSize - rxSize;
+        if (restSize >= m_dataSize) {
+          sendUploadData(
+              context, sp, m_dataOffset++, m_dataSize, KID_DB_EXPORT_REQUEST);
+        } else {
+          sendUploadData(context, sp, m_dataOffset++, m_dataTotalSize - rxSize,
+              KID_DB_EXPORT_REQUEST);
+        }
+      } else {
+        // this is final
+        m_dataOffset = m_dataSize = 0;
+        utils.log("Received all db data");
+      }
+      break;
+
+    case KID_DOWNLOAD_DATA:
       break;
 
     default:

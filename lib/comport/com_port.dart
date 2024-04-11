@@ -13,6 +13,10 @@ bool m_admin = false;
 String m_userName = "";
 SerialPort? sp;
 
+int m_dataOffset = 0;
+int m_dataSize = 0;
+int m_dataTotalSize = 0;
+
 final printProvider = Provider<String>((ref) {
   return "";
 });
@@ -111,6 +115,7 @@ class _ComPortState extends State<ComPort> {
               // const SizedBox(width: 10),
               _comPort(),
               _commandList(),
+              _dbCommand(),
               _userInputSend(),
               _userRcvScreen()
             ],
@@ -405,6 +410,117 @@ class _ComPortState extends State<ComPort> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  _dbCommand() {
+    final dbUserIdController = TextEditingController();
+    final dbOffsetController = TextEditingController();
+    final dbSizeController = TextEditingController();
+
+    return Expanded(
+      flex: 0,
+      child: Container(
+        margin: const EdgeInsets.all(10.0),
+        // padding: const EdgeInsets.all(0.0),
+        decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(5.0)),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const SizedBox(width: 10),
+                ExpElevatedButton(
+                  title: "DB Exp",
+                  onPressed: () {
+                    int userId = int.parse(dbUserIdController.text);
+                    sendDbExportRequest(context, sp, userId);
+                  },
+                ),
+                const SizedBox(width: 10),
+                ExpElevatedButton(
+                  title: "DB Imp",
+                  onPressed: () {
+                    sendDbImportRequest(context, sp,
+                        int.parse(dbUserIdController.text), 8192, 0);
+                  },
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: TextField(
+                      enabled: true,
+                      keyboardType: TextInputType.number,
+                      controller: dbUserIdController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "input user id",
+                        // labelText: "1",
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const SizedBox(width: 10),
+                ExpElevatedButton(
+                  title: "Upload Data",
+                  onPressed: () {
+                    m_dataOffset = int.parse(dbOffsetController.text);
+                    m_dataSize = int.parse(dbSizeController.text);
+                    sendUploadData(context, sp, m_dataOffset++, m_dataSize,
+                        KID_DB_EXPORT_REQUEST);
+                  },
+                ),
+                const SizedBox(width: 10),
+                ExpElevatedButton(
+                  title: "Download Data",
+                  onPressed: () {},
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: TextField(
+                      enabled: true,
+                      keyboardType: TextInputType.number,
+                      controller: dbOffsetController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "req offset",
+                        // labelText: "1",
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: TextField(
+                      enabled: true,
+                      keyboardType: TextInputType.number,
+                      controller: dbSizeController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "data Size",
+                        // labelText: "1",
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
