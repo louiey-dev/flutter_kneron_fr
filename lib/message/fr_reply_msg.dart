@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_kneron_fr/message/fr_api.dart';
 import 'package:flutter_kneron_fr/message/fr_kid_message.dart';
 import 'package:flutter_kneron_fr/message/fr_msg.dart';
 import 'package:flutter_kneron_fr/utils/utils.dart';
+import 'package:intl/intl.dart';
 
 class ReplyData {
   int kid = 0;
@@ -14,6 +16,9 @@ class ReplyData {
 }
 
 ReplyData s_msg_reply_data = ReplyData();
+// List<Uint8List> dbFile = [];
+List<int> dbFile = [];
+int dbOffset = 0;
 
 bool parseReply(BuildContext context) {
   s_msg_reply_data.kid = rx.data[5];
@@ -148,11 +153,34 @@ bool parseReply(BuildContext context) {
       utils.log("user id $userId, total size $totalSize");
 
       m_dataTotalSize = totalSize;
-
+      dbFile.clear();
+      dbOffset = 0;
       // sendUploadData(context, sp, 0, 4095, KID_DB_EXPORT_REQUEST);
       break;
 
     case KID_UPLOAD_DATA:
+      // dbFile = List.from(s_msg_reply_data.data);
+      for (int i = 0; i < s_msg_reply_data.data.length; i++) {
+        dbFile.add(s_msg_reply_data.data[i]);
+      }
+
+      // if (dbOffset == 0) {
+      //   File dbTemp = File(
+      //       "C:\\${DateFormat('yyyy-MM-dd_kk-mm').format(DateTime.now())}_${dbOffset.toString()}.db");
+      //   dbTemp.writeAsBytes(dbFile, flush: true);
+      // } else if (dbOffset == 1) {
+      //   for (int i = 0; i < 16; i++) {
+      //     utils.log(s_msg_reply_data.data[i].toRadixString(16));
+      //   }
+      // }
+      // for (int i = 0; i < 16; i++) {
+      //   utils.log("[$i] ${s_msg_reply_data.data[i].toRadixString(16)}");
+      // }
+      // dbOffset++;
+
+      // utils.log(
+      //     "dbFile len ${dbFile.length}, data len ${s_msg_reply_data.data.length}");
+
       int rxSize = m_dataOffset * m_dataSize;
       if (rxSize < m_dataTotalSize) {
         // check whether this is last one
@@ -161,6 +189,8 @@ bool parseReply(BuildContext context) {
           sendUploadData(
               context, sp, m_dataOffset++, m_dataSize, KID_DB_EXPORT_REQUEST);
         } else {
+          sleep(const Duration(seconds: 2));
+
           sendUploadData(context, sp, m_dataOffset++, m_dataTotalSize - rxSize,
               KID_DB_EXPORT_REQUEST);
         }
@@ -168,7 +198,14 @@ bool parseReply(BuildContext context) {
         // this is final
         m_dataOffset = m_dataSize = 0;
         utils.log("Received all db data");
+
+        // File db = File("C:\\${DateTime.now()}.db");
+        File db = File(
+            "C:\\${DateFormat('yyyy-MM-dd_kk-mm').format(DateTime.now())}.bin");
+        db.writeAsBytes(dbFile, flush: false);
+        utils.log("dbFile len ${dbFile.length}");
       }
+
       break;
 
     case KID_DOWNLOAD_DATA:
@@ -178,12 +215,14 @@ bool parseReply(BuildContext context) {
       break;
   }
   clearReplyData();
+  rx.data.clear();
   return true;
 }
 
 bool clearReplyData() {
   s_msg_reply_data.kid = s_msg_reply_data.result = 0;
   s_msg_reply_data.data.clear();
+
   return true;
 }
 

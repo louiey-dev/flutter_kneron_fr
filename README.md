@@ -14,10 +14,11 @@ Kneron FR module monitor program
   - Input offset and data size at input field (0 for offset and size which should less than total DB size)
   - Request "Upload Data"
   - Console will show what you sent and got
+  - DB data save to filesystem
+    - c:\2024-04-12_17-16.bin
 
 ## TODO
 
-- DB data save to filesystem
 - DB import feature
 - Delete user
 - IR image upload from module and pop up image
