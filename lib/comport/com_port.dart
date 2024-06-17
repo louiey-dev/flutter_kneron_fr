@@ -103,8 +103,10 @@ class _ComPortState extends State<ComPort> {
             : 'Open';
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text("Kneron FR Module"),
+        // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme.of(context).colorScheme.background,
+        // title: const Text("Kneron FR Module"),
+        title: Image.asset('assets/images/semi-logo.gif', fit: BoxFit.cover),
       ),
       body: SingleChildScrollView(
         child: SizedBox(
@@ -583,8 +585,10 @@ class _ComPortState extends State<ComPort> {
       flex: 1,
       child: SizedBox(
         child: Card(
+          color: Colors.orange[100],
           margin: const EdgeInsets.all(15.0),
           child: ListView.builder(
+              padding: const EdgeInsets.all(20),
               shrinkWrap: true,
               itemCount: receiveDataList.length,
               itemBuilder: (context, index) {
